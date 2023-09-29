@@ -1,7 +1,7 @@
 # Guttenberg-Text
 Scraping text from Guttenberg for Vector Index benchmark.
 
-The script scrapes, creates EvaDB table and inserts the text to create ~1M vector indices.
+The script scrapes, creates EvaDB table and inserts the text to create ~1M vector indices. The scraped text is stored in 'new_gut.txt'
 
 Ref: https://github.com/aparrish/gutenberg-dammit
 
