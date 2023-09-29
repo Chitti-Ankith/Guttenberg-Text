@@ -1,0 +1,5 @@
+unidecode
+evadb
+qdrant-client
+https://github.com/aparrish/gutenberg-dammit/archive/master.zip
+sentence-transformers
