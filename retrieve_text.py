@@ -1,5 +1,6 @@
 import os
 from time import perf_counter
+from tqdm import tqdm
 
 from unidecode import unidecode
 from gutenbergdammit.ziputils import searchandretrieve
@@ -50,13 +51,13 @@ def try_execute(conn, query):
         pass
 
 
-def create_index(story_path: str):
-    path = os.path.dirname(os.getcwd())
-    cursor = evadb.connect().cursor()
 
-    story_table = "TablePPText"
-    story_feat_table = "FeatTablePPText"
-    index_table = "IndexTable"
+story_table = "TablePPText"
+story_feat_table = "FeatTablePPText"
+index_table = "IndexTable"
+
+def create_index(story_path, cursor):
+    path = os.path.dirname(os.getcwd())
 
     timestamps = {}
     t_i = 0
@@ -70,10 +71,6 @@ def create_index(story_path: str):
 
     cursor.query("DROP FUNCTION IF EXISTS SentenceFeatureExtractor;").execute()
     cursor.query(Text_feat_function_query).execute()
-
-    cursor.query(
-        f"SELECT * FROM {story_table};"
-    ).execute()
 
     cursor.query(f"DROP TABLE IF EXISTS {story_table};").execute()
     cursor.query(f"DROP TABLE IF EXISTS {story_feat_table};").execute()
@@ -119,24 +116,37 @@ def create_index(story_path: str):
         f"SELECT * FROM {story_feat_table};"
     ).execute())
 
+
+def query_index(type, cursor):
     print("Create index")
 
+    st = perf_counter()
     # Create search index on extracted features.
     cursor.query(
-        f"CREATE INDEX {index_table} ON {story_feat_table} (features) USING QDRANT;"
+        f"CREATE INDEX {index_table} ON {story_feat_table} (features) USING {type};"
     ).execute()
+    print(f"{type} build time: {perf_counter() - st:.3f}")
 
-    t_i = t_i + 1
-    timestamps[t_i] = perf_counter()
-    print(f"Time: {(timestamps[t_i] - timestamps[t_i - 1]) * 1000:.3f} ms")
-
-    print(f"Total Time: {(timestamps[t_i] - timestamps[0]) * 1000:.3f} ms")
-
+    print("Start searching ...")
+    tp = 0
+    ITER = 10
+    st = perf_counter()
+    for i in range(ITER):
+        res = cursor.query(f"""
+                SELECT * FROM trainVector
+                ORDER BY Similarity(SentenceFeatureExtractor('What were the key factors and events that led to the abolition of slavery?'),features)
+                LIMIT 100
+                """).df()
+        # print(res[0])
+    # print(tp / (ITER * 100))
+    print(f"{type} query search time: {perf_counter() - st:.3f}")
 
 def main():
-    story_path = download_text()
-    create_index(story_path)
-
+    # story_path = download_text()
+    cursor = evadb.connect().cursor()
+    # create_index(story_path, cursor)
+    for index in ["CHROMADB", "QDRANT", "FAISS"]:
+        query_index(index, cursor)
 
 if __name__ == "__main__":
     main()
