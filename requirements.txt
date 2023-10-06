@@ -1,5 +1,8 @@
 unidecode
 evadb
-qdrant-client
+qdrant_client
+faiss-cpu
+faiss-gpu
+chromadb
 https://github.com/aparrish/gutenberg-dammit/archive/master.zip
 sentence-transformers
